@@ -23,7 +23,7 @@ const LandingPage = () => {
       <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
         <RoleCard role="Patient" onSelect={handleSelect} />
         <RoleCard role="Doctor" onSelect={handleSelect} />
-        <RoleCard role="Admin" onSelect={handleSelect} />
+        {/* <RoleCard role="Admin" onSelect={handleSelect} /> */}
       </div>
     </div>
   );
