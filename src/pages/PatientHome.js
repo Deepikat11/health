@@ -22,6 +22,8 @@ import {
   faHospital
 } from '@fortawesome/free-solid-svg-icons';
 
+import { useNavigate } from 'react-router-dom';
+
 // Placeholder doctor images
 const doctorImages = [
   'https://i.pinimg.com/736x/f4/c9/ef/f4c9ef33d04a22050038e9e53eeb7d85.jpg',
@@ -48,7 +50,13 @@ const doctorImages = [
 ];
 
 // Health tips data
-const healthTipsData = [ { tip: 'Stay Hydrated: Drink at least 8 glasses of water daily to maintain optimal body functions and energy levels.', image: 'https://thumbs.dreamstime.com/b/celebrate-world-water-day-clean-drop-fresh-blue-ripples-saving-environment-embracing-ecology-featuring-nasa-349203350.jpg' }, { tip: 'Exercise Regularly: Aim for at least 30 minutes of physical activity each day to improve cardiovascular health and boost mood.', image: 'https://media-cldnry.s-nbcnews.com/image/upload/newscms/2015_18/512061/exercise-outside-woman-stock-today-150427-tease.jpg' }, { tip: 'Eat Healthy: Include plenty of fruits, vegetables, and whole grains in your diet for essential nutrients and better digestion.', image: 'https://media.istockphoto.com/id/1409236261/photo/healthy-food-healthy-eating-background-fruit-vegetable-berry-vegetarian-eating-superfood.jpg?s=612x612&w=0&k=20&c=kYZKgwsQbH_Hscl3mPRKkus0h1OPuL0TcXxZcO2Zdj0=' }, { tip: 'Get Enough Sleep: Aim for 7-8 hours of quality sleep each night to support immune function and mental clarity.', image: 'https://www.cdc.gov/sleep/media/images/Sleep-WomanPeacefullySleeping-1217582444.jpg' }, { tip: 'Manage Stress: Practice relaxation techniques like meditation or yoga to reduce stress and improve overall wellbeing.', image: 'https://ananda.ai/wp-content/uploads/2022/10/vlog-60-1024x536.jpg' }, { tip: 'Limit Screen Time: Take regular breaks from digital devices to reduce eye strain and improve sleep quality.', image: 'https://cdn-magixmin.magiconline.com/images/cause-screen-time-blue-light.webp' }, { tip: 'Practice Mindfulness: Take a few minutes each day to practice mindfulness techniques to improve mental health.', image: 'https://intermountainhealthcare.org/-/media/images/modules/blog/posts/2021/02/mindfulness-and-meditation.jpg' } ];
+const healthTipsData = [ { tip: 'Stay Hydrated: Drink at least 8 glasses of water daily to maintain optimal body functions and energy levels.', image: 'https://thumbs.dreamstime.com/b/celebrate-world-water-day-clean-drop-fresh-blue-ripples-saving-environment-embracing-ecology-featuring-nasa-349203350.jpg' }, 
+  { tip: 'Exercise Regularly: Aim for at least 30 minutes of physical activity each day to improve cardiovascular health and boost mood.', image: 'https://media-cldnry.s-nbcnews.com/image/upload/newscms/2015_18/512061/exercise-outside-woman-stock-today-150427-tease.jpg' },
+   { tip: 'Eat Healthy: Include plenty of fruits, vegetables, and whole grains in your diet for essential nutrients and better digestion.', image: 'https://media.istockphoto.com/id/1409236261/photo/healthy-food-healthy-eating-background-fruit-vegetable-berry-vegetarian-eating-superfood.jpg?s=612x612&w=0&k=20&c=kYZKgwsQbH_Hscl3mPRKkus0h1OPuL0TcXxZcO2Zdj0=' },
+    { tip: 'Get Enough Sleep: Aim for 7-8 hours of quality sleep each night to support immune function and mental clarity.', image: 'https://www.cdc.gov/sleep/media/images/Sleep-WomanPeacefullySleeping-1217582444.jpg' },
+     { tip: 'Manage Stress: Practice relaxation techniques like meditation or yoga to reduce stress and improve overall wellbeing.', image: 'https://ananda.ai/wp-content/uploads/2022/10/vlog-60-1024x536.jpg' }, 
+     { tip: 'Limit Screen Time: Take regular breaks from digital devices to reduce eye strain and improve sleep quality.', image: 'https://bia.ca/wp-content/uploads/2017/05/61076975_m-Mindfulness.jpg' }, 
+     { tip: 'Practice Mindfulness: Take a few minutes each day to practice mindfulness techniques to improve mental health.', image: 'https://www.wellmark.com/-/media/sites/blue-magazine/2019-content-marketing/june-publish/full_screentime_info.png?sc_lang=en&hash=3109294B48BE325935F6B079FA68F23D' } ];
 
 // Doctor availability times
 const availabilityData = {
@@ -72,6 +80,7 @@ const availabilityData = {
   'Dr. Allen': ['Tue 10-6', 'Wed 8-2', 'Sat 9-1']
   // Add more doctors as needed
 };
+
 
 // Doctor ratings and specialty data
 const doctorDetails = {
@@ -117,6 +126,17 @@ const PatientHome = () => {
   });
   const [nextAppointments, setNextAppointments] = useState([]);
 
+  useEffect(() => {
+    const savedAppointments = JSON.parse(localStorage.getItem('appointments')) || [];
+    setNextAppointments(savedAppointments);
+  
+    const interval = setInterval(() => {
+      setTipIndex((prevIndex) => (prevIndex + 1) % healthTipsData.length);
+    }, 5000);
+  
+    return () => clearInterval(interval);
+  }, []);
+  
   const handleSearch = (e) => {
     e.preventDefault();
     if (search.trim()) {
@@ -128,13 +148,16 @@ const PatientHome = () => {
   const handleBooking = (e) => {
     e.preventDefault();
     if (appointmentData.doctor && appointmentData.date && appointmentData.time) {
-      setSuccessMessage(`Appointment booked successfully with ${appointmentData.doctor} on ${appointmentData.date} at ${appointmentData.time}`);
-      setNextAppointments([...nextAppointments, appointmentData]);
+      const updatedAppointments = [...nextAppointments, appointmentData];
+      setNextAppointments(updatedAppointments);
+      localStorage.setItem('appointments', JSON.stringify(updatedAppointments));
+  
+      setSuccessMessage(`Appointment booked with ${appointmentData.doctor} on ${appointmentData.date} at ${appointmentData.time}`);
       setAppointmentData({ doctor: '', date: '', time: '', reason: '' });
       setTimeout(() => setSuccessMessage(''), 4000);
     }
   };
-
+  
   const handleContactSubmit = (e) => {
     e.preventDefault();
     if (formData.name && formData.email && formData.message) {
@@ -209,6 +232,35 @@ const PatientHome = () => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
+  const user = JSON.parse(localStorage.getItem('user'));
+  const [filteredDoctors, setFilteredDoctors] = useState(Object.keys(doctorDetails));
+
+  useEffect(() => {
+    if (search.trim() === '') {
+      setFilteredDoctors(Object.keys(doctorDetails));
+    } else {
+      const query = search.toLowerCase();
+      const filtered = Object.keys(doctorDetails).filter(
+        (doctor) =>
+          doctor.toLowerCase().includes(query) ||
+          doctorDetails[doctor].specialty.toLowerCase().includes(query)
+      );
+      setFilteredDoctors(filtered);
+    }
+  }, [search]);
+
+  const scrollToRecommended = () => {
+    const section = document.querySelector('.recommended-doctors-section');
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      section.classList.add('highlight-section');
+      setTimeout(() => {
+        section.classList.remove('highlight-section');
+      }, 1500);
+    }
+  };
+  
+  
 
   return (
     <div className="patient-container">
@@ -226,9 +278,11 @@ const PatientHome = () => {
         {showProfile && (
           <div className="profile-details">
             <h2><FontAwesomeIcon icon={faUser } /> Your Profile</h2>
-            <p><strong>Name:</strong> John Doe</p>
+            <p>Name: {user?.name}</p>
+            <p>Email: {user?.email}</p>
+
             <p><strong>Age:</strong> 30</p>
-            <p><strong>Email:</strong> john@example.com</p>
+            {/* <p><strong>Email:</strong> john@example.com</p> */}
             <p><strong>Phone:</strong> (123) 456-7890</p>
             <p><strong>Blood Type:</strong> O+</p>
             <button><FontAwesomeIcon icon={faFileAlt} /> Edit Profile</button>
@@ -270,7 +324,34 @@ const PatientHome = () => {
           )}
         </section>
 
-        <section className="find-doctor-section">
+        {/* <section className="find-doctor-section">
+  <h2><FontAwesomeIcon icon={faSearch} /> Find a Doctor</h2>
+  <div className="search-input-container">
+    <input
+      type="text"
+      placeholder="Search by specialty, condition, or doctor name..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+    />
+    {search && (
+      <div className="suggestions-list">
+        {Object.keys(doctorDetails)
+          .filter((doctor) =>
+            doctor.toLowerCase().includes(search.toLowerCase()) ||
+            doctorDetails[doctor].specialty.toLowerCase().includes(search.toLowerCase())
+          )
+          .map((doctor, idx) => (
+            <div key={idx} className="suggestion-item" onClick={() => handleDoctorClick(doctor)}>
+              {doctor} - {doctorDetails[doctor].specialty}
+            </div>
+          ))}
+      </div>
+    )}
+  </div> */}
+{/* </section> */}
+
+
+        {/* <section className="find-doctor-section">
           <h2><FontAwesomeIcon icon={faSearch} /> Find a Doctor</h2>
           <form onSubmit={handleSearch}>
             <div className="search-input-container">
@@ -283,34 +364,99 @@ const PatientHome = () => {
               <button type="submit">Search</button>
             </div>
           </form>
-        </section>
+        </section> */}
 
-        <section className="recommended-doctors-section">
-          <h2><FontAwesomeIcon icon={faStar} /> Recommended Doctors</h2>
-          <div className="doctors-scroll-container">
-            <button className="scroll-button left" onClick={() => scrollDoctors(-1)}>
-              <FontAwesomeIcon icon={faChevronLeft} />
-            </button>
-            <div className="doctors-container" ref={doctorsContainerRef}>
-              {Object.keys(doctorDetails).map((doctorName, index) => (
-                <div className="doctor-card" key={index} onClick={() => handleDoctorClick(doctorName)}>
-                  <div className="doctor-rating">
-                    <span>{doctorDetails[doctorName].rating}</span>
-                    <FontAwesomeIcon icon={faStar} />
-                  </div>
-                  <img src={doctorImages[index % doctorImages.length]} alt={doctorName} />
-                  <h3>{doctorName}</h3>
-                  <p>{doctorDetails[doctorName].specialty}</p>
-                  <p>{doctorDetails[doctorName].experience} years experience</p>
-                  <button className="book-now-btn">Book Now</button>
-                </div>
-              ))}
+<section className="find-doctor-section">
+  <h2><FontAwesomeIcon icon={faSearch} /> Find a Doctor</h2>
+  <form
+    onSubmit={(e) => {
+      e.preventDefault();
+      scrollToRecommended();
+    }}
+  >
+    <div className="search-input-container">
+      <input
+        type="text"
+        placeholder="Search by specialty, condition, or doctor name..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+      <button type="submit">Search!!</button>
+    </div>
+  </form>
+</section>
+
+<section className={`recommended-doctors-section`}>
+  <h2><FontAwesomeIcon icon={faStar} /> Recommended Doctors</h2>
+  <div className="doctors-scroll-container">
+    <button className="scroll-button left" onClick={() => scrollDoctors(-1)}>
+      <FontAwesomeIcon icon={faChevronLeft} />
+    </button>
+    <div className="doctors-container" ref={doctorsContainerRef}>
+      {filteredDoctors.length > 0
+        ? filteredDoctors.map((doctorName, index) => (
+            <div
+              className="doctor-card"
+              key={index}
+              onClick={() => handleDoctorClick(doctorName)}
+            >
+              <div className="doctor-rating">
+                <span>{doctorDetails[doctorName].rating}</span>
+                <FontAwesomeIcon icon={faStar} />
+              </div>
+              <img
+                src={doctorImages[index % doctorImages.length]}
+                alt={doctorName}
+              />
+              <h3>{doctorName}</h3>
+              <p>{doctorDetails[doctorName].specialty}</p>
+              <p>{doctorDetails[doctorName].experience} years experience</p>
+              <button
+                className="book-now-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDoctorSelect(doctorName);
+                }}
+              >
+                Book Now
+              </button>
             </div>
-            <button className="scroll-button right" onClick={() => scrollDoctors(1)}>
-              <FontAwesomeIcon icon={faChevronRight} />
-            </button>
-          </div>
-        </section>
+          ))
+        : Object.keys(doctorDetails).map((doctorName, index) => (
+            <div
+              className="doctor-card"
+              key={index}
+              onClick={() => handleDoctorClick(doctorName)}
+            >
+              <div className="doctor-rating">
+                <span>{doctorDetails[doctorName].rating}</span>
+                <FontAwesomeIcon icon={faStar} />
+              </div>
+              <img
+                src={doctorImages[index % doctorImages.length]}
+                alt={doctorName}
+              />
+              <h3>{doctorName}</h3>
+              <p>{doctorDetails[doctorName].specialty}</p>
+              <p>{doctorDetails[doctorName].experience} years experience</p>
+              <button
+                className="book-now-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDoctorSelect(doctorName);
+                }}
+              >
+                Book Now
+              </button>
+            </div>
+          ))}
+    </div>
+    <button className="scroll-button right" onClick={() => scrollDoctors(1)}>
+      <FontAwesomeIcon icon={faChevronRight} />
+    </button>
+  </div>
+</section>
+
 
         <section className="booking-section">
           <h2><FontAwesomeIcon icon={faCalendarAlt} /> Book an Appointment</h2>

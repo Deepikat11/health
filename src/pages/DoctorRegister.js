@@ -4,7 +4,8 @@ import "../styles/RegisterStyles.css";
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const PatientRegister = () => {
+
+const DoctorRegister = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
@@ -57,7 +58,7 @@ const PatientRegister = () => {
       if (response.data.success) {
         // Registration successful, redirect to login
         alert('Registration successful! Please login.');
-        navigate('/patientlogin');
+        navigate('/doctorlogin');
       } else {
         console.error('API returned success: false', response.data);
         setError(response.data.message || 'Registration failed. Please try again.');
@@ -152,7 +153,7 @@ const PatientRegister = () => {
           />
         </div>
         
-        <Link to="/patientlogin" className="ms-2">Already user login here</Link>
+        <Link to="/doctorlogin" className="ms-2">Already user login here</Link>
         <br />
         <button 
           className="btn btn-primary" 
@@ -177,4 +178,4 @@ const PatientRegister = () => {
   );
 };
 
-export default PatientRegister;
+export default DoctorRegister;

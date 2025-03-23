@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import '../styles/DoctorHome.css';
+import { useNavigate } from 'react-router-dom';
+
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faUser,
@@ -26,7 +28,8 @@ import {
   faUserFriends,
   faFileAlt,
   faSignOutAlt,
-  faCog
+  faCog,
+  faTimes
 } from '@fortawesome/free-solid-svg-icons';
 
 // Placeholder patient images
@@ -46,7 +49,17 @@ const patientImages = [
 ];
 
 // Patient data
-const patientData = {
+const initialSchedule = [
+  { time: '09:00 AM', patient: 'John Doe', reason: 'Regular Checkup', duration: '30 mins' },
+  { time: '09:45 AM', patient: 'Case Review', reason: 'Review MRI and lab reports', duration: '45 mins' },
+  { time: '10:30 AM', patient: 'Lunch Break', duration: '1 hour' },
+  { time: '11:30 AM', patient: 'Jane Smith', reason: 'Follow-up', duration: '30 mins' },
+  { time: '12:00 PM', patient: 'Tea Break', duration: '15 mins' },
+  { time: '12:30 PM', patient: 'Michael Brown', reason: 'Diabetes Consultation', duration: '30 mins' }
+];
+
+// Original patient data
+const initialPatientData = {
   'John Smith': { age: 45, gender: 'Male', lastVisit: '2025-02-15', condition: 'Hypertension', nextAppt: '2025-03-25', status: 'Stable' },
   'Sarah Johnson': { age: 32, gender: 'Female', lastVisit: '2025-03-01', condition: 'Pregnancy (28 weeks)', nextAppt: '2025-03-29', status: 'Monitoring' },
   'Michael Brown': { age: 58, gender: 'Male', lastVisit: '2025-03-10', condition: 'Type 2 Diabetes', nextAppt: '2025-04-10', status: 'Review Needed' },
@@ -136,6 +149,9 @@ const notificationData = [
 ];
 
 const DoctorHome = () => {
+  const doctor = JSON.parse(localStorage.getItem('user')) || {};
+  const navigate = useNavigate();
+
   const [search, setSearch] = useState('');
   const [showProfile, setShowProfile] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -153,6 +169,25 @@ const DoctorHome = () => {
     appointmentDate: '',
     appointmentTime: '',
     appointmentReason: ''
+  });
+  const [dynamicSchedule, setDynamicSchedule] = useState([...initialSchedule]); 
+  const [patientData, setPatientData] = useState({...initialPatientData});
+  
+  // Add New Patient State
+  const [showAddPatientModal, setShowAddPatientModal] = useState(false);
+  const [newPatientData, setNewPatientData] = useState({
+    firstName: '',
+    lastName: '',
+    age: '',
+    gender: '',
+    email: '',
+    phone: '',
+    address: '',
+    condition: '',
+    status: 'New Patient',
+    lastVisit: '',
+    nextAppt: '',
+    notes: ''
   });
 
   const handleSearch = (e) => {
@@ -187,11 +222,80 @@ const DoctorHome = () => {
     }
   };
 
+  // Helper function to convert time from 24-hour format to 12-hour format with AM/PM
+  const convertTo12HourFormat = (time24) => {
+    const [hours, minutes] = time24.split(':');
+    const hour = parseInt(hours, 10);
+    const suffix = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minutes} ${suffix}`;
+  };
+
+  // Function to check if a date string is today
+  const isToday = (dateString) => {
+    const today = new Date();
+    const date = new Date(dateString);
+    return date.getDate() === today.getDate() &&
+           date.getMonth() === today.getMonth() &&
+           date.getFullYear() === today.getFullYear();
+  };
+
+  // Function to insert appointment in correct time order
+  const insertAppointmentInOrder = (newAppointment, schedule) => {
+    // Convert all times to minutes since midnight for comparison
+    const getMinutesSinceMidnight = (timeString) => {
+      const [time, period] = timeString.split(' ');
+      let [hours, minutes] = time.split(':').map(Number);
+      if (period === 'PM' && hours !== 12) hours += 12;
+      if (period === 'AM' && hours === 12) hours = 0;
+      return hours * 60 + minutes;
+    };
+
+    const newAppointmentMinutes = getMinutesSinceMidnight(newAppointment.time);
+    
+    // Find the correct position to insert the new appointment
+    let insertIndex = schedule.length;
+    for (let i = 0; i < schedule.length; i++) {
+      const currentMinutes = getMinutesSinceMidnight(schedule[i].time);
+      if (newAppointmentMinutes < currentMinutes) {
+        insertIndex = i;
+        break;
+      }
+    }
+    
+    // Create a new schedule with the appointment inserted at the correct position
+    const newSchedule = [
+      ...schedule.slice(0, insertIndex),
+      newAppointment,
+      ...schedule.slice(insertIndex)
+    ];
+    
+    return newSchedule;
+  };
+
   const handleScheduleAppointment = (e) => {
     e.preventDefault();
-    const { patientName, appointmentDate, appointmentTime } = formData;
+    const { patientName, appointmentDate, appointmentTime, appointmentReason } = formData;
+    
     if (patientName && appointmentDate && appointmentTime) {
       setSuccessMessage(`Appointment scheduled with ${patientName} on ${appointmentDate} at ${appointmentTime}`);
+      
+      // Check if the appointment is for today
+      if (isToday(appointmentDate)) {
+        // Create a new appointment object
+        const newAppointment = {
+          time: convertTo12HourFormat(appointmentTime),
+          patient: patientName,
+          reason: appointmentReason || `New Appointment`,
+          duration: '30 mins'
+        };
+        
+        // Insert the new appointment in the correct time order
+        const updatedSchedule = insertAppointmentInOrder(newAppointment, dynamicSchedule);
+        setDynamicSchedule(updatedSchedule);
+      }
+      
+      // Reset the form
       setFormData({
         patientName: '',
         patientEmail: '',
@@ -199,6 +303,7 @@ const DoctorHome = () => {
         appointmentTime: '',
         appointmentReason: ''
       });
+      
       setTimeout(() => setSuccessMessage(''), 3000);
     }
   };
@@ -209,6 +314,72 @@ const DoctorHome = () => {
       ...formData,
       [name]: value
     });
+  };
+
+  // Add New Patient Input Change Handler
+  const handleNewPatientInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewPatientData({
+      ...newPatientData,
+      [name]: value
+    });
+  };
+
+  // Add New Patient Form Submit Handler
+  const handleAddNewPatient = (e) => {
+    e.preventDefault();
+    
+    // Create full name from first and last name
+    const fullName = `${newPatientData.firstName} ${newPatientData.lastName}`;
+    
+    // Format the date for last visit (if any) or use today's date
+    const lastVisit = newPatientData.lastVisit || new Date().toISOString().split('T')[0];
+    
+    // Format the date for next appointment (if any) or calculate a default (2 weeks from now)
+    const nextApptDate = newPatientData.nextAppt || (() => {
+      const date = new Date();
+      date.setDate(date.getDate() + 14); // 2 weeks from now as default
+      return date.toISOString().split('T')[0];
+    })();
+    
+    // Create the new patient object
+    const newPatient = {
+      age: parseInt(newPatientData.age, 10),
+      gender: newPatientData.gender,
+      lastVisit: lastVisit,
+      condition: newPatientData.condition,
+      nextAppt: nextApptDate,
+      status: newPatientData.status
+    };
+    
+    // Add to the patient data
+    setPatientData(prevData => ({
+      ...prevData,
+      [fullName]: newPatient
+    }));
+    
+    // Show success message
+    setSuccessMessage(`New patient ${fullName} has been added successfully`);
+    
+    // Reset the form and close the modal
+    setNewPatientData({
+      firstName: '',
+      lastName: '',
+      age: '',
+      gender: '',
+      email: '',
+      phone: '',
+      address: '',
+      condition: '',
+      status: 'New Patient',
+      lastVisit: '',
+      nextAppt: '',
+      notes: ''
+    });
+    
+    setShowAddPatientModal(false);
+    
+    setTimeout(() => setSuccessMessage(''), 3000);
   };
 
   const scrollPatients = (direction) => {
@@ -274,15 +445,21 @@ const DoctorHome = () => {
         
         {showProfile && (
           <div className="profile-details">
-            <h2><FontAwesomeIcon icon={faUserMd} /> Dr. Sarah Johnson</h2>
-            <p><strong>Specialty:</strong> Family Medicine</p>
-            <p><strong>Email:</strong> dr.johnson@example.com</p>
+            <h2><FontAwesomeIcon icon={faUserMd} /> Dr. {doctor.name}</h2>
+            <p><strong>Email:</strong> {doctor.email}</p>
             <p><strong>Phone:</strong> (123) 456-7890</p>
             <p><strong>Office:</strong> Room 315, Main Building</p>
             <div className="profile-actions">
               <button><FontAwesomeIcon icon={faFileAlt} /> Edit Profile</button>
               <button><FontAwesomeIcon icon={faCog} /> Settings</button>
-              <button className="signout-btn"><FontAwesomeIcon icon={faSignOutAlt} /> Sign Out</button>
+              <button className="signout-btn" 
+                onClick={() => {
+                  localStorage.clear();
+                  navigate('/'); 
+                }}
+              >
+                <FontAwesomeIcon icon={faSignOutAlt} /> Sign Out
+              </button>
             </div>
           </div>
         )}
@@ -314,31 +491,45 @@ const DoctorHome = () => {
         <section className="daily-schedule-section">
           <h2><FontAwesomeIcon icon={faCalendarAlt} /> Today's Schedule: {formattedDate}</h2>
           <div className="schedule-container">
-            <div className="timeline">
-              {scheduleData.map((appointment, index) => (
-                <div key={index} className={`timeline-item ${appointment.patient === 'Lunch Break' || appointment.patient === 'Staff Meeting' || appointment.patient === 'Patient Documentation' ? 'non-patient' : ''}`}>
-                  <div className="time-slot">
-                    <span className="time">{appointment.time}</span>
-                    <span className="duration">{appointment.duration}</span>
-                  </div>
-                  <div className="appointment-details">
-                    <h3>{appointment.patient}</h3>
-                    {appointment.reason && <p>{appointment.reason}</p>}
-                    {!(appointment.patient === 'Lunch Break' || appointment.patient === 'Staff Meeting' || appointment.patient === 'Patient Documentation') && (
-                      <div className="appointment-actions">
-                        <button className="view-record-btn">
-                          <FontAwesomeIcon icon={faFileMedical} /> Records
-                        </button>
-                        <button className="start-btn">
-                          <FontAwesomeIcon icon={faStethoscope} /> Start
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+          <div className="timeline">
+          {dynamicSchedule.map((appointment, index) => (
+  <div 
+    key={index} 
+    className={`timeline-item ${
+      appointment.patient === 'Lunch Break' || 
+      appointment.patient === 'Staff Meeting' || 
+      appointment.patient === 'Patient Documentation' || 
+      appointment.patient === 'Tea Break' || 
+      appointment.patient === 'Case Review' 
+        ? 'non-patient' 
+        : ''
+    }`}
+  >
+    <div className="time-slot">
+      <span className="time">{appointment.time}</span>
+      <span className="duration">{appointment.duration}</span>
+    </div>
+    <div className="appointment-details">
+      <h3>{appointment.patient}</h3>
+      {appointment.reason && <p>{appointment.reason}</p>}
+      {!(appointment.patient === 'Lunch Break' || appointment.patient === 'Staff Meeting' || appointment.patient === 'Patient Documentation' || appointment.patient === 'Tea Break' || appointment.patient === 'Case Review') && (
+        <div className="appointment-actions">
+          <button className="view-record-btn">
+            <FontAwesomeIcon icon={faFileMedical} /> Records
+          </button>
+          <button className="start-btn">
+            <FontAwesomeIcon icon={faStethoscope} /> Start
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
+))}
+
+</div>
+
             </div>
-          </div>
+          
         </section>
 
         <section className="patient-management-section">
@@ -487,6 +678,8 @@ const DoctorHome = () => {
             </div>
           </section>
 
+        
+
           <section className="medical-updates-section">
             <h2><FontAwesomeIcon icon={faNotesMedical} /> Medical Updates</h2>
             <div className="medical-article">
@@ -567,6 +760,11 @@ const DoctorHome = () => {
                 />
               </div>
             </div>
+
+
+
+
+
             
             <div className="form-group">
               <label htmlFor="appointmentReason">Reason for Appointment:</label>

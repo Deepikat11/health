@@ -7,6 +7,7 @@ import DoctorHome from './pages/DoctorHome';
 import PatientLogin from './pages/PatientLogin';
 import Register from './pages/PatientRegister';
 import DoctorLogin from './pages/DoctorLogin';
+import DoctorRegister from './pages/DoctorRegister';
 
 // import AdminHome from './pages/AdminHome';
 
@@ -19,7 +20,8 @@ const App = () => {
         <Route path="/doctorlogin" element={<DoctorLogin/>}/>
         <Route path="/patientregister" element={<Register />} />
         <Route path="/patienthome" element={<PatientHome />} />
-        <Route path="/doctor" element={<DoctorHome />} />
+        <Route path="/doctorhome" element={<DoctorHome />} />
+        <Route path="/doctorregister" element={<DoctorRegister/>}/>
         {/* <Route path="/admin" element={<AdminHome />} /> */}
         
       </Routes>
