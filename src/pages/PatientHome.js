@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import '../styles/PatientHome.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Link } from 'react-router-dom';
 import {
   faSearch,
   faUser ,
@@ -232,6 +233,12 @@ const PatientHome = () => {
             <p><strong>Blood Type:</strong> O+</p>
             <button><FontAwesomeIcon icon={faFileAlt} /> Edit Profile</button>
             <button><FontAwesomeIcon icon={faFileMedical} /> Medical Records</button>
+            <Link 
+              to="/" 
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg transition duration-300"
+            >
+              Logout
+            </Link>
           </div>
         )}
       </header>
